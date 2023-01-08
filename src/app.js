@@ -23,7 +23,9 @@ for (const file of commandFiles) {
 	}
 }
 
-const queueMap = new Map();
+const handleMusicCommand = async (interaction, command) => {
+	await command.execute(interaction, client);
+}
 
 client.on(Events.InteractionCreate, async interaction => {
 	if (!interaction.isChatInputCommand()) return;
@@ -34,10 +36,9 @@ client.on(Events.InteractionCreate, async interaction => {
 		console.error(`No command matching ${interaction.commandName} was found.`);
 		return;
 	}
-	
+
 	try {
-		if(command.name == 'play') await command.execute(interaction);
-		else await command.execute(interaction);
+		await handleMusicCommand(interaction, command);
 	} catch (error) {
 		console.error(`Error executing ${interaction.commandName}`);
 		console.error(error);
@@ -46,6 +47,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.login(process.env.token);
 client.once(Events.ClientReady, () => {
+	client.user.setActivity('생선 진열', { type: 'PLAYING' });
     console.log(`Logged in as ${client.user.tag}!`);
     console.log(`Discord Bot is Listening!!`);
 });
