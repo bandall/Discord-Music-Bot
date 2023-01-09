@@ -28,6 +28,10 @@ const handleMusicCommand = async (interaction, command) => {
 }
 
 client.on(Events.InteractionCreate, async interaction => {
+	if(!interaction) {
+		console.error("Interaction is null", interaction);
+		return;
+	}
 	if (!interaction.isChatInputCommand()) return;
 
 	const command = interaction.client.commands.get(interaction.commandName);
@@ -47,7 +51,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.login(process.env.token);
 client.once(Events.ClientReady, () => {
-	client.user.setActivity('생선 진열', { type: 'PLAYING' });
+	client.user.setActivity('생선 진열');
     console.log(`Logged in as ${client.user.tag}!`);
     console.log(`Discord Bot is Listening!!`);
 });
