@@ -181,10 +181,11 @@ const play = async (interaction, client) => {
                 filter: "audioonly",
                 quality: 'highestaudio',
                 highWaterMark: 1 << 25
-            }));
+            }), { inlineVolume: true });
         } else {
-            resource = createAudioResource(createReadStream(song.path));
+            resource = createAudioResource(createReadStream(song.path), { inlineVolume: true });
         }
+        
         // embed.author.name = client.user.username;
         // embed.author.icon_url = `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.webp`;
         embed.fields[0].value = `🎵    Now playing  ➡  ${song.title}`;
@@ -192,6 +193,7 @@ const play = async (interaction, client) => {
         else embed.fields[0].value += `  \`local music\``
         client.channels.cache.get(serverQueue.textChannel).send({embeds: [embed]});
         log_server(`[${interaction.guild.name}] playing [${song.title}]`);
+        resource.volume.setVolume(0.1);
         player.play(resource);
     } catch (error) {
         client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생할 수 없습니다. 다음곡으로 넘어갑니다.");
