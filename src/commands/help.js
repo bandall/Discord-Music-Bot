@@ -55,7 +55,7 @@ module.exports = {
         .setDescription('도움말을 출력합니다.'),
 
         async execute(interaction, client) {
-            log_server(`[${interaction.guild.name}:${interaction.user.username}] used ping`);
+            log_server(`[${interaction.guild.name}:${interaction.user.username}] used help`);
             interaction.reply({embeds: [embed]});
         },
 
