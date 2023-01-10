@@ -1,16 +1,13 @@
 const { AudioPlayerStatus, joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
-const ytdl = require("ytdl-core");
+import ytdl from "ytdl-core";
 import fs, { createReadStream } from "fs";
 import path from "path"
 import "dotenv/config"
+import { log_server, secToStamp, sleep } from "./util";
 const queueMap = new Map();
 
 const embed = {
     color: 0x00FFFF,
-    author: {
-        name: '',
-        icon_url: '',
-    },
     fields: [{
         name: '현재 재생 중인 노래',
         value: '',
@@ -18,10 +15,6 @@ const embed = {
       },
     ],
     timestamp: new Date().toISOString(),
-    footer: {
-        text: '',
-        icon_url: '',
-    },
 };
 
 
@@ -42,7 +35,8 @@ const addPlayList = async (interaction, client) => {
         song = {
             type: 'youtube',
             title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url
+            url: songInfo.videoDetails.video_url,
+            time: songInfo.videoDetails.lengthSeconds
         };
     } catch (error) {
         interaction.reply({ content: '🚫 잘못된 URL 입니다.' });
@@ -58,9 +52,11 @@ const addPlayList = async (interaction, client) => {
                 guildId: interaction.guild.id,
                 adapterCreator: interaction.guild.voiceAdapterCreator,
             });
+            log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
             const player = createAudioPlayer();
             player.on('error', error => {
-                console.error(`🚫 재생 도중 오류가 발생하였습니다.`);
+                log_server(`ERROR: Player got an error`);
+                client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
                 playNext(interaction, client, queueMap);
             });
             player.on(AudioPlayerStatus.Idle, () => {
@@ -75,7 +71,8 @@ const addPlayList = async (interaction, client) => {
             };
             serverQueue.playlist.push(song);
             queueMap.set(interaction.guild.id, serverQueue);
-            interaction.reply("🎶 노래 재생이 시작됩니다.")
+            interaction.reply("🎶 노래 재생이 시작됩니다.");
+            log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
             play(interaction, client);
             return;
         }
@@ -90,6 +87,7 @@ const addPlayList = async (interaction, client) => {
     }
     serverQueue.playlist.push(song);
     interaction.reply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
+    log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
 }
 
 const addLocalPlaylist = async (interaction, client) => {
@@ -113,11 +111,11 @@ const addLocalPlaylist = async (interaction, client) => {
         song = {
             type: 'local',
             title: songName,
-            path: musicPath
+            path: musicPath,
+            time: null
         };
     } catch (error) {
         interaction.reply({ content: '🚫 잘못된 파일명 입니다.' });
-        console.log(error);
         return;
     }
     
@@ -130,9 +128,11 @@ const addLocalPlaylist = async (interaction, client) => {
                 guildId: interaction.guild.id,
                 adapterCreator: interaction.guild.voiceAdapterCreator,
             });
+            log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
             const player = createAudioPlayer();
             player.on('error', error => {
-                console.error(`🚫 재생 도중 오류가 발생하였습니다.`);
+                log_server(`ERROR: Player got an error`);
+                client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
                 playNext(interaction, client, queueMap);
             });
             player.on(AudioPlayerStatus.Idle, () => {
@@ -147,7 +147,8 @@ const addLocalPlaylist = async (interaction, client) => {
             };
             serverQueue.playlist.push(song);
             queueMap.set(interaction.guild.id, serverQueue);
-            interaction.reply("🎶 노래 재생이 시작됩니다.")
+            interaction.reply("🎶 노래 재생이 시작됩니다.");
+            log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
             play(interaction, client);
             return;
         }
@@ -161,12 +162,13 @@ const addLocalPlaylist = async (interaction, client) => {
     }
     serverQueue.playlist.push(song);
     interaction.reply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
+    log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
 }
 
 const play = async (interaction, client) => {
     let serverQueue = queueMap.get(interaction.guild.id);
     if(!serverQueue) {
-        console.log("Cannot find Queue at funcion PLAY");
+        log_server("Cannot find Queue at funcion PLAY");
         interaction.reply({ content: `🚫 서버의 재생목록을 찾지 못 했습니다.` });
         return;
     }
@@ -183,31 +185,20 @@ const play = async (interaction, client) => {
         } else {
             resource = createAudioResource(createReadStream(song.path));
         }
-        
-        embed.author.name = client.username;
-        embed.author.icon_url = `https://cdn.discordapp.com/avatars/${client.id}/${client.avatar}.webp`;
+        // embed.author.name = client.user.username;
+        // embed.author.icon_url = `https://cdn.discordapp.com/avatars/${client.user.id}/${client.user.avatar}.webp`;
         embed.fields[0].value = `🎵    Now playing  ➡  ${song.title}`;
+        if(song.time) embed.fields[0].value += `  \`${secToStamp(song.time)}\``
+        else embed.fields[0].value += `  \`local music\``
         client.channels.cache.get(serverQueue.textChannel).send({embeds: [embed]});
+        log_server(`[${interaction.guild.name}] playing [${song.title}]`);
         player.play(resource);
     } catch (error) {
         client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생할 수 없습니다. 다음곡으로 넘어갑니다.");
-        console.log(error);
+        log_server(`[${interaction.guild.name}] can't play [${song.title}]`);
+        log_server(error);
         playNext(interaction, client);
         return;
-    }
-}
-// 지연시간 설정
-const playNextBackup = async (interaction, client) => {
-    let serverQueue = queueMap.get(interaction.guild.id)
-    if(serverQueue) {
-        serverQueue.playlist.shift();
-        if (serverQueue.playlist.length == 0) {
-            serverQueue.player.stop();
-            serverQueue.connection.destroy();
-            queueMap.delete(interaction.guild.id);
-        } else {
-            play(interaction, client);
-        }
     }
 }
 
@@ -216,8 +207,9 @@ const playNext = async (interaction, client) => {
     if(serverQueue) {
         serverQueue.playlist.shift();
         if (serverQueue.playlist.length == 0) {
+            log_server(`[${interaction.guild.name}] is waiting for new song`);
             // 10분
-            for(let i = 0; i < 600; i++) {
+            for(let i = 0; i < 1800; i++) {
                 await sleep(1000);
                 let tmpServerQueue = queueMap.get(interaction.guild.id);
                 if(!tmpServerQueue) return;
@@ -227,6 +219,7 @@ const playNext = async (interaction, client) => {
                     return;
                 }
             }
+            log_server(`[${interaction.guild.name}] exit`);
             serverQueue.player.stop();
             serverQueue.connection.destroy();
             queueMap.delete(interaction.guild.id);
@@ -256,7 +249,7 @@ const skip = async (interaction, client) => {
     if(serverQueue.player._state.status != 'pause') {
         serverQueue.player.unpause();
     }
-
+    log_server(`[${interaction.guild.name}:${interaction.user.username}] used skip`);
     if(serverQueue.playlist.length == 1) {
         try {
             interaction.reply('⏩ 노래를 건너뛰는 중입니다.\n❗ 재생 목록이 더 이상 없습니다.');
@@ -267,7 +260,8 @@ const skip = async (interaction, client) => {
             serverQueue.player.stop();
         } catch (error) {
             client.channels.cache.get(serverQueue.textChannel).send("🚫 오류가 발생했습니다.");
-            console.log(error);
+            log_server(`[${interaction.guild.name}:${interaction.user.username}] can't skip song`);
+            log_server(error);
         }
     } else {
         interaction.reply({ content: '⏩ 노래를 건너뛰는 중입니다. '});
@@ -298,13 +292,15 @@ const pause = async (interaction, client) => {
     }
 
     try {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] used pause`);
         serverQueue.player.pause();
         interaction.reply({content: "음악을 일시정지 합니다."});
         const reply = await interaction.fetchReply();
         reply.react('⏸');
     } catch (error) {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] can't pause`);
         client.channels.cache.get(serverQueue.textChannel).send("🚫 오류가 발생해 음악을 정지할 수 없습니다.");
-        console.log(error);
+        log_server(error);
     }
 }
 
@@ -331,13 +327,15 @@ const unpause = async (interaction, client) => {
     }
   
     try {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] used unpause`);
         serverQueue.player.unpause();
         interaction.reply({content: "음악을 다시 재생합니다."});
         const reply = await interaction.fetchReply();
         reply.react('▶️');
     } catch (error) {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] can't unpause`);
         client.channels.cache.get(serverQueue.textChannel).send("🚫 오류가 발생해 음악을 재생할 수 없습니다.");
-        console.log(error);
+        log_server(error);
     }
 
 }
@@ -361,6 +359,7 @@ const stop = async (interaction, client) => {
     }
 
     try {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] used stop`);
         interaction.reply('재생을 중지합니다.');
         const reply = await interaction.fetchReply();
         reply.react('🛑');
@@ -368,8 +367,9 @@ const stop = async (interaction, client) => {
         queueMap.set(interaction.guild.id, serverQueue);
         serverQueue.player.stop();
     } catch (error) {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] can't stop`);
         client.channels.cache.get(serverQueue.textChannel).send("🚫 오류가 발생했습니다.");
-        console.log(error);
+        log_server(error);
     }
     
 }
@@ -390,14 +390,20 @@ const showQueue = async (interaction, client) => {
         return;
     }
 
-    embed.author.name = client.username;
-    embed.author.icon_url = `https://cdn.discordapp.com/avatars/${client.id}/${client.avatar}.webp`;
-    embed.fields[0].value = "▶ "
-    for(let i = 0; i < serverQueue.playlist.length; i++) {
-        const song = serverQueue.playlist[i];
-        embed.fields[0].value += `${i+1}. ${song.title}\n`
+    // embed.author.name = client.username;
+    // embed.author.icon_url = `https://cdn.discordapp.com/avatars/${client.id}/${client.avatar}.webp`;
+    try {
+        embed.fields[0].value = "▶ "
+        for(let i = 0; i < serverQueue.playlist.length; i++) {
+            const song = serverQueue.playlist[i];
+            embed.fields[0].value += `${i+1}. ${song.title}\n`
+        }
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] used queue`);
+        interaction.reply({embeds: [embed]});
+    } catch (error) {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] can't queue`);
+        log_server(error);
     }
-    interaction.reply({embeds: [embed]});
 }
 
 const leave = async (interaction, client) => {
@@ -411,20 +417,17 @@ const leave = async (interaction, client) => {
         return;
     }
     try {
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] used leave`);
         interaction.reply({content: "🧨"});
         serverQueue.player.stop();
         serverQueue.connection.destroy();
         queueMap.delete(interaction.guild.id);
     } catch (error) {
-        console.log(error);
+        log_server(`[${interaction.guild.name}:${interaction.user.username}] can't leave`);
+        log_server(error);
     }
 }
 
-const sleep = (ms) => {
-    return new Promise(resolve=>{
-        setTimeout(resolve,ms)
-    });
-}
 
 
 module.exports = { play, playNext, addPlayList, pause, unpause, stop, addLocalPlaylist, showQueue, leave, skip };

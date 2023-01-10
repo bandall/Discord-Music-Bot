@@ -1,13 +1,9 @@
 const { SlashCommandBuilder } = require('discord.js');
 import "dotenv/config";
-
+import { log_server } from "../util";
 const embed = {
     color: 0x00FFFF,
     title: '자갈치상인 명령어 모음',
-    author: {
-        name: '',
-        icon_url: '',
-    },
     fields: [
         {
             name: 'play',
@@ -51,10 +47,6 @@ const embed = {
         },
     ],
     timestamp: new Date().toISOString(),
-    footer: {
-        text: '',
-        icon_url: '',
-    },
 };
 
 module.exports = {
@@ -63,8 +55,7 @@ module.exports = {
         .setDescription('도움말을 출력합니다.'),
 
         async execute(interaction, client) {
-            embed.author.name = client.username;
-            embed.author.icon_url = `https://cdn.discordapp.com/avatars/${client.id}/${client.avatar}.webp`;
+            log_server(`[${interaction.guild.name}:${interaction.user.username}] used ping`);
             interaction.reply({embeds: [embed]});
         },
 

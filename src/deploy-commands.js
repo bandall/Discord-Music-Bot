@@ -40,4 +40,5 @@ const rest = new REST({ version: '10' }).setToken(token);
 	}
 })();
 
-//https://discord.com/api/oauth2/authorize?client_id=805264955867136000&permissions=0&scope=bot%20applications.commands
+// https://discord.com/api/oauth2/authorize?client_id=805264955867136000&permissions=0&scope=bot%20applications.commands
+// https://discord.com/api/oauth2/authorize?client_id=1062168800398680154&permissions=8&scope=bot%20applications.commands

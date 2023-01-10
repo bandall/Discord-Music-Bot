@@ -2,7 +2,7 @@ import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
 import fs from "fs"
 import path from "path"
 import "dotenv/config"
-
+import { log_server } from "./util";
 const client = new Client({
 	intents: [
 		GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent
@@ -19,17 +19,17 @@ for (const file of commandFiles) {
 	if ('data' in command && 'execute' in command) {
 		client.commands.set(command.data.name, command);
 	} else {
-		console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
+		log_server(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
 	}
 }
 
-const handleMusicCommand = async (interaction, command) => {
+const handleCommand = async (interaction, command) => {
 	await command.execute(interaction, client);
 }
 
 client.on(Events.InteractionCreate, async interaction => {
 	if(!interaction) {
-		console.error("Interaction is null", interaction);
+		log_server("Interaction is null", interaction);
 		return;
 	}
 	if (!interaction.isChatInputCommand()) return;
@@ -42,16 +42,16 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 
 	try {
-		await handleMusicCommand(interaction, command);
+		await handleCommand(interaction, command);
 	} catch (error) {
-		console.error(`Error executing ${interaction.commandName}`);
-		console.error(error);
+		log_server(`Error executing ${interaction.commandName}`);
+		log_server(error);
 	}
 });
 
 client.login(process.env.token);
 client.once(Events.ClientReady, () => {
-	client.user.setActivity('생선 진열');
-    console.log(`Logged in as ${client.user.tag}!`);
-    console.log(`Discord Bot is Listening!!`);
+	client.user.setActivity('민트초코 통조림 개발');
+    log_server(`🌎 Logged in as ${client.user.tag}!`);
+    log_server(`🚀 Discord Bot is Listening!!`);
 });
