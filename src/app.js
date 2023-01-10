@@ -1,7 +1,7 @@
 import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
+import { token } from "./config.json"
 import fs from "fs"
 import path from "path"
-import "dotenv/config"
 import { log_server } from "./util";
 const client = new Client({
 	intents: [
@@ -49,7 +49,7 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
-client.login(process.env.token);
+client.login(token);
 client.once(Events.ClientReady, () => {
 	client.user.setActivity('민트초코 통조림 개발');
     log_server(`🌎 Logged in as ${client.user.tag}!`);
