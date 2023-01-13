@@ -1,4 +1,4 @@
-const { AudioPlayerStatus, joinVoiceChannel, createAudioPlayer, createAudioResource } = require('@discordjs/voice');
+const { AudioPlayerStatus, joinVoiceChannel, createAudioPlayer, createAudioResource, VoiceConnectionStatus, entersState } = require('@discordjs/voice');
 import ytdl from "ytdl-core";
 import fs, { createReadStream } from "fs";
 import path from "path"
@@ -16,7 +16,6 @@ const embed = {
     ],
     timestamp: new Date().toISOString(),
 };
-
 
 const addPlayList = async (interaction, client) => {
     if(!interaction || !client) {
@@ -52,15 +51,28 @@ const addPlayList = async (interaction, client) => {
                 guildId: interaction.guild.id,
                 adapterCreator: interaction.guild.voiceAdapterCreator,
             });
+            connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
+                try {
+                    await Promise.race([
+                        entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+                        entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
+                    ]);
+                    // Seems to be reconnecting to a new channel - ignore disconnect
+                } catch (error) {
+                    // Seems to be a real disconnect which SHOULDN'T be recovered from
+                    handleDisconnect(interaction, client);
+                }
+            });
             log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
             const player = createAudioPlayer();
             player.on('error', error => {
                 log_server(`ERROR: Player got an error`);
+                log_server(error)
                 client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
-                playNext(interaction, client, queueMap);
+                playNext(interaction, client);
             });
             player.on(AudioPlayerStatus.Idle, () => {
-                playNext(interaction, client, queueMap);
+                playNext(interaction, client);
             });
             connection.subscribe(player);
             serverQueue = {
@@ -128,15 +140,27 @@ const addLocalPlaylist = async (interaction, client) => {
                 guildId: interaction.guild.id,
                 adapterCreator: interaction.guild.voiceAdapterCreator,
             });
+            connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
+                try {
+                    await Promise.race([
+                        entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+                        entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
+                    ]);
+                    // Seems to be reconnecting to a new channel - ignore disconnect
+                } catch (error) {
+                    // Seems to be a real disconnect which SHOULDN'T be recovered from
+                    handleDisconnect(interaction, client);
+                }
+            });
             log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
             const player = createAudioPlayer();
             player.on('error', error => {
                 log_server(`ERROR: Player got an error`);
                 client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
-                playNext(interaction, client, queueMap);
+                playNext(interaction, client);
             });
             player.on(AudioPlayerStatus.Idle, () => {
-                playNext(interaction, client, queueMap);
+                playNext(interaction, client);
             });
             connection.subscribe(player);
             serverQueue = {
@@ -430,6 +454,27 @@ const leave = async (interaction, client) => {
     }
 }
 
+const handleDisconnect = async (interaction, client) => {
+    log_server(`[${interaction.guild.name}] forced voice disconnect`);
+    if(!interaction || !client) {
+        log_server("[ERROR] => handleDisconnect has null args")
+        return;
+    }
+    let serverQueue = queueMap.get(interaction.guild.id);
+    if(!serverQueue) {
+        log_server("[ERROR] => handleDisconnect can't find serverQueue")
+        return;
+    }
+    try {
+        client.channels.cache.get(serverQueue.textChannel).send({content: "🧨"});
+        serverQueue.player.stop();
+        serverQueue.connection.destroy();
+        queueMap.delete(interaction.guild.id);
+    } catch (error) {
+        log_server(`[ERROR] => handleDisconnect can't disconnect voice channel`);
+        log_server(error);
+    }
+}
 
 
 module.exports = { play, playNext, addPlayList, pause, unpause, stop, addLocalPlaylist, showQueue, leave, skip };
