@@ -1,6 +1,7 @@
-//import util from "util"
+import "dotenv/config"
 const util = require("util");
 const fs = require("fs");
+
 class Mutex {
     constructor() {
         this.lock = false;
@@ -24,7 +25,11 @@ class Mutex {
 }
 const mutex = new Mutex();
 const log_server = async (d) => {
-    const date = new Date(new Date().getTime() + 60 * 60 * 9);
+    let date;
+    if(process.env.environ == "dev")
+        date = new Date(new Date().getTime() + 60 * 60 * 9);
+    if(process.env.environ == "server")
+        date = new Date(new Date().getTime() + 60 * 60 * 9 * 1000);
     const timeStamp = 
     "["+date.getFullYear().toString().padStart(4, "0")+
     "-"+(date.getMonth()+1).toString().padStart(2, "0")+
