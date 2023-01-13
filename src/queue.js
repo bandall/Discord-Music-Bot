@@ -169,7 +169,7 @@ const play = async (interaction, client) => {
     let serverQueue = queueMap.get(interaction.guild.id);
     if(!serverQueue) {
         log_server("Cannot find Queue at funcion PLAY");
-        interaction.reply({ content: `🚫 서버의 재생목록을 찾지 못 했습니다.` });
+        client.channels.cache.get(serverQueue.textChannel).send({ content: `🚫 서버의 재생목록을 찾지 못 했습니다.` });
         return;
     }
     const song = serverQueue.playlist[0];
@@ -211,7 +211,7 @@ const playNext = async (interaction, client) => {
         if (serverQueue.playlist.length == 0) {
             log_server(`[${interaction.guild.name}] is waiting for new song`);
             // 10분
-            for(let i = 0; i < 1800; i++) {
+            for(let i = 0; i < 3600; i++) {
                 await sleep(1000);
                 let tmpServerQueue = queueMap.get(interaction.guild.id);
                 if(!tmpServerQueue) return;

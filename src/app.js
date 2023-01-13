@@ -51,7 +51,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.login(token);
 client.once(Events.ClientReady, () => {
-	client.user.setActivity('민트초코 통조림 개발');
+	client.user.setActivity('수산물 손질');
     log_server(`🌎 Logged in as ${client.user.tag}!`);
     log_server(`🚀 Discord Bot is Listening!!`);
 });
