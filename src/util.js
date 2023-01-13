@@ -24,7 +24,7 @@ class Mutex {
 }
 const mutex = new Mutex();
 const log_server = async (d) => {
-    const date = new Date();
+    const date = new Date(new Date().getTime() + 60 * 60 * 9);
     const timeStamp = 
     "["+date.getFullYear().toString().padStart(4, "0")+
     "-"+(date.getMonth()+1).toString().padStart(2, "0")+
