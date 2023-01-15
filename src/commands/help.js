@@ -11,6 +11,11 @@ const embed = {
             inline: false
         },
         {
+            name: 'playlist',
+            value: 'Youtube URL을 이용해 재생목록을 재생합니다.',
+            inline: false
+        },
+        {
             name: 'local',
             value: '서버에 저장된 노래를 재생합니다.\n업로드 링크: [https://bandallgom.com:42667/sharing/LGJ8dlIj7]\n업로드 시 "귀하의 이름"은 music으로 작성\n/local [업로드한 파일 이름]',
             inline: false
@@ -56,7 +61,7 @@ module.exports = {
 
         async execute(interaction, client) {
             log_server(`[${interaction.guild.name}:${interaction.user.username}] used help`);
-            interaction.reply({embeds: [embed]});
+            await interaction.reply({embeds: [embed]});
         },
 
 };

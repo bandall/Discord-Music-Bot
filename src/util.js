@@ -54,7 +54,7 @@ const log_server = async (d) => {
 
 const secToStamp = (time) => {
     const second = time % 60
-    const minute = parseInt(time / 60);
+    const minute = parseInt(time / 60 % 60);
     const hour =  parseInt(time / 3600);
     if(hour > 0)
         return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:${second.toString().padStart(2, "0")}`;

@@ -6,6 +6,6 @@ module.exports = {
         .setDescription('현재 재생 중인 노래를 건너뜁니다.'),
         
         async execute(interaction, client) {
-            skip(interaction, client)
+            await skip(interaction, client)
         },
 };

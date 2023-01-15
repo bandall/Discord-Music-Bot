@@ -6,6 +6,6 @@ module.exports = {
         .setDescription('음악재생을 멈추고 Queue를 정리합니다.'),
 
     async execute(interaction, client) {
-        stop(interaction, client)
+        await stop(interaction, client)
     },
 };

@@ -1,18 +1,18 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { addPlayList } = require('../queue');
+const { addYoutubePlaylist } = require('../queue');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('play')
-        .setDescription('유튜브 url로 노래를 재생합니다.')
+        .setName('playlist')
+        .setDescription('유튜브 url로 Playlist를 재생합니다.')
         .addStringOption(option =>
             option.setName('url')
-                .setDescription('Youtube URL')
+                .setDescription('Youtube Playlist URL')
                 .setRequired(true)
         ),
 
         async execute(interaction, client) {
-            await addPlayList(interaction, client);
+            await addYoutubePlaylist(interaction, client);
         },
         
 };

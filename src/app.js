@@ -45,6 +45,7 @@ client.on(Events.InteractionCreate, async interaction => {
 		await handleCommand(interaction, command);
 	} catch (error) {
 		log_server(`Error executing ${interaction.commandName}`);
+		log_server(interaction, command)
 		log_server(error);
 	}
 });

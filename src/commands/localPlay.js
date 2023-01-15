@@ -13,7 +13,7 @@ module.exports = {
         ),
 
         async execute(interaction, client) {
-            addLocalPlaylist(interaction, client);
+            await addLocalPlaylist(interaction, client);
         },
 
 };
