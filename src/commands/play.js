@@ -7,7 +7,7 @@ module.exports = {
         .setDescription('Youtube 또는 SoundCloud URL을 이용해 노래를 재생합니다.')
         .addStringOption(option =>
             option.setName('url')
-                .setDescription('Youtube URL')
+                .setDescription('Youtube 또는 SoundCloud URL')
                 .setRequired(true)
         ),
 
