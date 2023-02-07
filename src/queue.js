@@ -26,7 +26,8 @@ const addPlayList = async (interaction, client) => {
         await interaction.reply({ content: '🚫 음악 기능을 사용하기 위해서는 음성 채널에 참가해야 합니다.' });
         return;
     }
-    
+    // set deferRely
+    await interaction.deferReply();
     let song = null;
     try {
         const url = interaction.options.getString('url');
@@ -38,7 +39,7 @@ const addPlayList = async (interaction, client) => {
             time: songInfo.video_details.durationInSec
         };
     } catch (error) {
-        await interaction.reply({ content: '🚫 잘못된 URL 입니다.' });
+        await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
         return;
     }
     
@@ -83,22 +84,22 @@ const addPlayList = async (interaction, client) => {
             };
             serverQueue.playlist.push(song);
             queueMap.set(interaction.guild.id, serverQueue);
-            await interaction.reply("🎶 노래 재생이 시작됩니다.");
+            await interaction.editReply("🎶 노래 재생이 시작됩니다.");
             log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
             play(interaction, client);
             return;
         }
     } catch (error) {
-        await interaction.reply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
+        await interaction.editReply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
         return;
     }
 
     if(interaction.member.voice.channel.id != serverQueue.connection.joinConfig.channelId) {
-        await interaction.reply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
+        await interaction.editReply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
         return;
     }
     serverQueue.playlist.push(song);
-    await interaction.reply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
+    await interaction.editReply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
 }
 
@@ -112,7 +113,9 @@ const addLocalPlaylist = async (interaction, client) => {
         await interaction.reply({ content: '🚫 음악 기능을 사용하기 위해서는 음성 채널에 참가해야 합니다.' });
         return;
     }
-    
+    // set deferRely
+    await interaction.deferReply();
+
     let song = null;
     try {
         const songName = interaction.options.getString('file');
@@ -128,7 +131,7 @@ const addLocalPlaylist = async (interaction, client) => {
             time: null
         };
     } catch (error) {
-        await interaction.reply({ content: '🚫 잘못된 파일명 입니다.' });
+        await interaction.editReply({ content: '🚫 잘못된 파일명 입니다.' });
         return;
     }
     
@@ -172,21 +175,21 @@ const addLocalPlaylist = async (interaction, client) => {
             };
             serverQueue.playlist.push(song);
             queueMap.set(interaction.guild.id, serverQueue);
-            await interaction.reply("🎶 노래 재생이 시작됩니다.");
+            await interaction.editReply("🎶 노래 재생이 시작됩니다.");
             log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
             play(interaction, client);
             return;
         }
     } catch (error) {
-        await interaction.reply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
+        await interaction.editReply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
         return;
     }
     if(interaction.member.voice.channel.id != serverQueue.connection.joinConfig.channelId) {
-        await interaction.reply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
+        await interaction.editReply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
         return;
     }
     serverQueue.playlist.push(song);
-    await interaction.reply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
+    await interaction.editReply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
 }
 
@@ -199,7 +202,10 @@ const addYoutubePlaylist = async (interaction, client) => {
         await interaction.reply({ content: '🚫 음악 기능을 사용하기 위해서는 음성 채널에 참가해야 합니다.' });
         return;
     }
-    
+
+    // set deferRely
+    await interaction.deferReply();
+
     const playlist = {
         title: "",
         videoCount: 0,
@@ -221,7 +227,7 @@ const addYoutubePlaylist = async (interaction, client) => {
             playlist.songs.push(song);
         }
     } catch (error) {
-        await interaction.reply({ content: '🚫 잘못된 URL 입니다.' });
+        await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
         return;
     }
     
@@ -278,18 +284,18 @@ const addYoutubePlaylist = async (interaction, client) => {
                 }
                 embed.fields[0].value += tmpString;
             }
-            await interaction.reply({embeds: [embed]});
+            await interaction.editReply({embeds: [embed]});
             log_server(`[${interaction.guild.name}:${interaction.user.username}] added new playlist [${playlist.title}]`);
             play(interaction, client);
             return;
         }
     } catch (error) {
-        await interaction.reply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
+        await interaction.editReply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
         return;
     }
 
     if(interaction.member.voice.channel.id != serverQueue.connection.joinConfig.channelId) {
-        await interaction.reply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
+        await interaction.editReply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
         return;
     }
     serverQueue.playlist.push(...playlist.songs);
@@ -299,7 +305,7 @@ const addYoutubePlaylist = async (interaction, client) => {
         const song = playlist.songs[i];
         embed.fields[0].value += `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
     }
-    await interaction.reply({embeds: [embed]});
+    await interaction.editReply({embeds: [embed]});
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new playlist [${playlist.title}]`);
 }
 
@@ -348,7 +354,7 @@ const playNext = async (interaction, client) => {
         serverQueue.playlist.shift();
         if (serverQueue.playlist.length == 0) {
             log_server(`[${interaction.guild.name}] is waiting for new song`);
-            // 10분
+            // 1시간
             for(let i = 0; i < 3600; i++) {
                 await sleep(1000);
                 let tmpServerQueue = queueMap.get(interaction.guild.id);
