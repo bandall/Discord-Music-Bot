@@ -6,6 +6,12 @@ import "dotenv/config"
 import { log_server, secToStamp, sleep } from "./util";
 const queueMap = new Map();
 
+play_dl.setToken({
+    soundcloud : {
+        client_id : process.env.soundcloudid
+    }
+})
+
 const embed = {
     color: 0x00FFFF,
     fields: [{
@@ -16,7 +22,7 @@ const embed = {
     ],
     timestamp: new Date().toISOString(),
 };
-// add single url to playlist
+// add single youtube or soundcloud url to playlist
 const addPlayList = async (interaction, client) => {
     if(!interaction || !client) {
         await interaction.reply({ content: '🚫 Discord 서버와의 통신에 오류가 발생했습니다.' });
@@ -31,14 +37,28 @@ const addPlayList = async (interaction, client) => {
     let song = null;
     try {
         const url = interaction.options.getString('url');
-        const songInfo = await play_dl.video_info(url);
-        song = {
-            type: 'youtube',
-            title: songInfo.video_details.title,
-            url: songInfo.video_details.url,
-            time: songInfo.video_details.durationInSec
-        };
+        if(url.startsWith('https') && play_dl.yt_validate(url) !== false) {
+            const songInfo = await play_dl.video_info(url);
+            song = {
+                type: 'youtube',
+                title: songInfo.video_details.title,
+                url: songInfo.video_details.url,
+                time: songInfo.video_details.durationInSec
+            };
+        } else if (url.startsWith('https') && await play_dl.so_validate(url) !== false){
+            const songInfo = await play_dl.soundcloud(url); 
+            song = {
+                type: 'soundcloud',
+                title: songInfo.name,
+                url: songInfo.url,
+                time: songInfo.durationInSec
+            };
+        } else {
+            await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
+            return;
+        }
     } catch (error) {
+        console.log(error);
         await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
         return;
     }
@@ -321,7 +341,7 @@ const play = async (interaction, client) => {
     let player = serverQueue.player;
     let resource = null;
     try {
-        if(song.type == "youtube") {
+        if(song.type == "youtube" || song.type == "soundcloud") {
             let stream = await play_dl.stream(song.url)
             resource = createAudioResource(stream.stream, { 
                 inputType: stream.type,

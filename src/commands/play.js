@@ -4,7 +4,7 @@ const { addPlayList } = require('../queue');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
-        .setDescription('유튜브 url로 노래를 재생합니다.')
+        .setDescription('Youtube 또는 SoundCloud URL을 이용해 노래를 재생합니다.')
         .addStringOption(option =>
             option.setName('url')
                 .setDescription('Youtube URL')

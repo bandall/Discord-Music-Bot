@@ -7,7 +7,7 @@ const embed = {
     fields: [
         {
             name: 'play',
-            value: 'Youtube URL을 이용해 노래를 재생합니다.',
+            value: 'Youtube 또는 SoundCloud URL을 이용해 노래를 재생합니다.',
             inline: false
         },
         {
