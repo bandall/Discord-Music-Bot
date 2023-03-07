@@ -43,7 +43,8 @@ const addPlayList = async (interaction, client) => {
                 type: 'youtube',
                 title: songInfo.video_details.title,
                 url: songInfo.video_details.url,
-                time: songInfo.video_details.durationInSec
+                time: songInfo.video_details.durationInSec,
+                seek: 0
             };
         } else if (url.startsWith('https') && await play_dl.so_validate(url) !== false){
             const songInfo = await play_dl.soundcloud(url); 
@@ -51,7 +52,8 @@ const addPlayList = async (interaction, client) => {
                 type: 'soundcloud',
                 title: songInfo.name,
                 url: songInfo.url,
-                time: songInfo.durationInSec
+                time: songInfo.durationInSec,
+                seek: 0
             };
         } else {
             await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
@@ -295,6 +297,7 @@ const addYoutubePlaylist = async (interaction, client) => {
             // send embeds
             embed.fields[0].name = `추가된 재생목록: ${playlist.title}`;
             embed.fields[0].value = "";
+            embed.timestamp = new Date().toISOString();
             for(let i = 0; i < playlist.songs.length; i++) {
                 const song = playlist.songs[i];
                 const tmpString = `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
@@ -321,6 +324,7 @@ const addYoutubePlaylist = async (interaction, client) => {
     serverQueue.playlist.push(...playlist.songs);
     embed.fields[0].name = `추가된 재생목록: ${playlist.title}`;
     embed.fields[0].value = "";
+    embed.timestamp = new Date().toISOString();
     for(let i = 0; i < playlist.songs.length; i++) {
         const song = playlist.songs[i];
         embed.fields[0].value += `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
@@ -342,7 +346,7 @@ const play = async (interaction, client) => {
     let resource = null;
     try {
         if(song.type == "youtube" || song.type == "soundcloud") {
-            let stream = await play_dl.stream(song.url)
+            let stream = await play_dl.stream(song.url, { seek : song.seek })
             resource = createAudioResource(stream.stream, { 
                 inputType: stream.type,
                 inlineVolume: true
@@ -352,6 +356,7 @@ const play = async (interaction, client) => {
         }
         embed.fields[0].name = "현재 재생 중인 노래"
         embed.fields[0].value = `🎵    Now playing  ➡  ${song.title}`;
+        embed.timestamp = new Date().toISOString();
         if(song.time) embed.fields[0].value += `  \`${secToStamp(song.time)}\``
         else embed.fields[0].value += `  \`local music\``
         await client.channels.cache.get(serverQueue.textChannel).send({embeds: [embed]});
@@ -434,6 +439,47 @@ const skip = async (interaction, client) => {
         await interaction.reply({ content: '⏩ 노래를 건너뛰는 중입니다. '});
         playNext(interaction, client)
     }
+}
+
+const seek = async (interaction, client) => {
+    if(!interaction || !client) {
+        await interaction.reply({ content: '🚫 Discord 서버와의 통신에 오류가 발생했습니다.' });
+        return;
+    }
+
+    let serverQueue = queueMap.get(interaction.guild.id);
+    if(!serverQueue) {
+        await interaction.reply({content: "🚫 음악 재생 중이 아닙니다."});
+        return;
+    }
+
+    if(serverQueue.playlist.length == 0) {
+        await interaction.reply({content: "🚫 음악 재생 중이 아닙니다."});
+        return;
+    }
+
+    if(serverQueue.player._state.status != 'pause') {
+        serverQueue.player.unpause();
+    }
+
+    log_server(`[${interaction.guild.name}:${interaction.user.username}] used seek`);
+
+    const cur_song = serverQueue.playlist[0];
+    const seek_time = interaction.options.getInteger('min') * 60 + interaction.options.getInteger('sec');
+    if(cur_song.time <= seek_time || seek_time < 0) {
+        await interaction.reply({ content: '🚫 입력한 시간이 잘못되었습니다.'});
+        return;
+    }
+    if(!(cur_song.type == "youtube" || cur_song.type == "soundcloud")) {
+        await interaction.reply({ content: '🚫 로컬 음악은 seek가 불가능합니다.'});
+        return;
+    }
+    serverQueue.playlist[0].seek = seek_time;
+
+    // add new playlist and skip
+    await interaction.reply({ content: '⏩ 노래를 빨리감는 중입니다 '});
+    serverQueue.playlist.unshift("Dummy");
+    playNext(interaction, client)
 }
 
 // pause player
@@ -564,6 +610,7 @@ const showQueue = async (interaction, client) => {
     try {
         embed.fields[0].name = "현재 재생 중인 노래"
         embed.fields[0].value = "▶ "
+        embed.timestamp = new Date().toISOString();
         for(let i = 0; i < serverQueue.playlist.length; i++) {
             const song = serverQueue.playlist[i];
             const tmpString = `${i+1}. ${song.title}\n`;
@@ -630,4 +677,4 @@ const handleDisconnect = async (interaction, client) => {
 }
 
 
-module.exports = { play, playNext, addPlayList, pause, unpause, stop, addLocalPlaylist, showQueue, leave, skip, addYoutubePlaylist };
+module.exports = { play, playNext, addPlayList, pause, unpause, stop, addLocalPlaylist, showQueue, leave, skip, addYoutubePlaylist, seek };
