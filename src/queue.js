@@ -460,25 +460,27 @@ const seek = async (interaction, client) => {
         await interaction.reply({content: "🚫 음악 재생 중이 아닙니다."});
         return;
     }
+
+    log_server(`[${interaction.guild.name}:${interaction.user.username}] used seek`);
     if(serverQueue.player._state.status === 'pause') {
         // serverQueue.player.unpause();
         await interaction.reply({content: "🚫 seek하기 전에 unpause 해주세요."});
         return;
     }
 
-    log_server(`[${interaction.guild.name}:${interaction.user.username}] used seek`);
-
     const cur_song = serverQueue.playlist[0];
-    const seek_time = interaction.options.getInteger('min') * 60 + interaction.options.getInteger('sec');
-    if(cur_song.time <= seek_time || seek_time < 0) {
-        await interaction.reply({ content: '🚫 입력한 시간이 잘못되었습니다.'});
-        return;
-    }
     if (cur_song.type !== "youtube") {
         // loacl hint https://shotstack.io/learn/use-ffmpeg-to-trim-video/
         await interaction.reply({ content: '🚫 Youtube 음원만 seek가 가능합니다.'});
         return;
     }
+    
+    const seek_time = interaction.options.getInteger('min') * 60 + interaction.options.getInteger('sec');
+    if(cur_song.time <= seek_time || seek_time < 0) {
+        await interaction.reply({ content: '🚫 입력한 시간이 잘못되었습니다.'});
+        return;
+    }
+    
     serverQueue.playlist[0].seek = seek_time;
 
     // add new playlist and skip
