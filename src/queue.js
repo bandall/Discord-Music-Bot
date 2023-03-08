@@ -6,11 +6,11 @@ import "dotenv/config"
 import { log_server, secToStamp, sleep } from "./util";
 const queueMap = new Map();
 
-play_dl.setToken({
-    soundcloud : {
-        client_id : process.env.soundcloudid
-    }
-})
+play_dl.getFreeClientID().then((clientID) => play_dl.setToken({
+     soundcloud : {
+         client_id : clientID
+     }
+}))
 
 const embed = {
     color: 0x00FFFF,
@@ -60,7 +60,7 @@ const addPlayList = async (interaction, client) => {
             return;
         }
     } catch (error) {
-        console.log(error);
+       log_server(error);
         await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
         return;
     }
@@ -354,6 +354,7 @@ const play = async (interaction, client) => {
         } else {
             resource = createAudioResource(createReadStream(song.path), { inlineVolume: true });
         }
+        resource.volume.setVolume(0.3);
         embed.fields[0].name = "현재 재생 중인 노래"
         embed.fields[0].value = `🎵    Now playing  ➡  ${song.title}`;
         embed.timestamp = new Date().toISOString();
@@ -361,7 +362,6 @@ const play = async (interaction, client) => {
         else embed.fields[0].value += `  \`local music\``
         await client.channels.cache.get(serverQueue.textChannel).send({embeds: [embed]});
         log_server(`[${interaction.guild.name}] playing [${song.title}]`);
-        resource.volume.setVolume(0.3);
         player.play(resource);
     } catch (error) {
         await client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생할 수 없습니다. 다음곡으로 넘어갑니다.");
@@ -417,9 +417,11 @@ const skip = async (interaction, client) => {
         await interaction.reply({content: "🚫 음악 재생 중이 아닙니다."});
         return;
     }
-    //소리 나는거 해결
-    if(serverQueue.player._state.status != 'pause') {
-        serverQueue.player.unpause();
+    //소리 나는거 해결 
+    if(serverQueue.player._state.status === 'pause') {
+        // serverQueue.player.unpause();
+        await interaction.reply({content: "🚫 skip하기 전에 unpause 해주세요."});
+        return;
     }
     log_server(`[${interaction.guild.name}:${interaction.user.username}] used skip`);
     if(serverQueue.playlist.length == 1) {
@@ -457,9 +459,10 @@ const seek = async (interaction, client) => {
         await interaction.reply({content: "🚫 음악 재생 중이 아닙니다."});
         return;
     }
-
-    if(serverQueue.player._state.status != 'pause') {
-        serverQueue.player.unpause();
+    if(serverQueue.player._state.status === 'pause') {
+        // serverQueue.player.unpause();
+        await interaction.reply({content: "🚫 seek하기 전에 unpause 해주세요."});
+        return;
     }
 
     log_server(`[${interaction.guild.name}:${interaction.user.username}] used seek`);
@@ -470,8 +473,9 @@ const seek = async (interaction, client) => {
         await interaction.reply({ content: '🚫 입력한 시간이 잘못되었습니다.'});
         return;
     }
-    if(!(cur_song.type == "youtube" || cur_song.type == "soundcloud")) {
-        await interaction.reply({ content: '🚫 로컬 음악은 seek가 불가능합니다.'});
+    if (cur_song.type !== "youtube") {
+        // loacl hint https://shotstack.io/learn/use-ffmpeg-to-trim-video/
+        await interaction.reply({ content: '🚫 Youtube 음원만 seek가 가능합니다.'});
         return;
     }
     serverQueue.playlist[0].seek = seek_time;
