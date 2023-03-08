@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { addYoutubePlaylist } = require('../queue');
+const { addPlayList } = require('../queue');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -12,7 +12,7 @@ module.exports = {
         ),
 
         async execute(interaction, client) {
-            await addYoutubePlaylist(interaction, client);
+            await addPlayList(interaction, client);
         },
         
 };

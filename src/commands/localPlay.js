@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { addLocalPlaylist } = require('../queue');
+const { addLocalSong } = require('../queue');
 import "dotenv/config";
 
 module.exports = {
@@ -13,7 +13,7 @@ module.exports = {
         ),
 
         async execute(interaction, client) {
-            await addLocalPlaylist(interaction, client);
+            await addLocalSong(interaction, client);
         },
 
 };

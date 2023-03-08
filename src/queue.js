@@ -6,6 +6,7 @@ import "dotenv/config"
 import { log_server, secToStamp, sleep } from "./util";
 const queueMap = new Map();
 
+// need to reset token after expired
 play_dl.getFreeClientID().then((clientID) => play_dl.setToken({
      soundcloud : {
          client_id : clientID
@@ -23,7 +24,7 @@ const embed = {
     timestamp: new Date().toISOString(),
 };
 // add single youtube or soundcloud url to playlist
-const addPlayList = async (interaction, client) => {
+const addSong = async (interaction, client) => {
     if(!interaction || !client) {
         await interaction.reply({ content: '🚫 Discord 서버와의 통신에 오류가 발생했습니다.' });
         return;
@@ -60,7 +61,7 @@ const addPlayList = async (interaction, client) => {
             return;
         }
     } catch (error) {
-       log_server(error);
+        log_server(error);
         await interaction.editReply({ content: '🚫 잘못된 URL 입니다.' });
         return;
     }
@@ -126,7 +127,7 @@ const addPlayList = async (interaction, client) => {
 }
 
 // add local song to playlist
-const addLocalPlaylist = async (interaction, client) => {
+const addLocalSong = async (interaction, client) => {
     if(!interaction || !client) {
         await interaction.reply({ content: '🚫 Discord 서버와의 통신에 오류가 발생했습니다.' });
         return;
@@ -215,7 +216,7 @@ const addLocalPlaylist = async (interaction, client) => {
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
 }
 
-const addYoutubePlaylist = async (interaction, client) => {
+const addPlayList = async (interaction, client) => {
     if(!interaction || !client) {
         await interaction.reply({ content: '🚫 Discord 서버와의 통신에 오류가 발생했습니다.' });
         return;
@@ -301,7 +302,7 @@ const addYoutubePlaylist = async (interaction, client) => {
             for(let i = 0; i < playlist.songs.length; i++) {
                 const song = playlist.songs[i];
                 const tmpString = `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
-                if(embed.fields[0].value.length + tmpString.length + 5 >= 1024) {
+                if(embed.fields[0].value.length + tmpString.length + 100 >= 1024) {
                     embed.fields[0].value += " ...";
                     break;
                 }
@@ -618,7 +619,7 @@ const showQueue = async (interaction, client) => {
         for(let i = 0; i < serverQueue.playlist.length; i++) {
             const song = serverQueue.playlist[i];
             const tmpString = `${i+1}. ${song.title}\n`;
-            if(embed.fields[0].value.length + tmpString.length + 5 >= 1024) {
+            if(embed.fields[0].value.length + tmpString.length + 100 >= 1024) {
                     embed.fields[0].value += " ...";
                     break;
                 }
@@ -680,5 +681,4 @@ const handleDisconnect = async (interaction, client) => {
     }
 }
 
-
-module.exports = { play, playNext, addPlayList, pause, unpause, stop, addLocalPlaylist, showQueue, leave, skip, addYoutubePlaylist, seek };
+module.exports = { play, playNext, addSong, pause, unpause, stop, addLocalSong, showQueue, leave, skip, addPlayList, seek };
