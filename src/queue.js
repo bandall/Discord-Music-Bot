@@ -23,6 +23,76 @@ const embed = {
     ],
     timestamp: new Date().toISOString(),
 };
+
+// make connection and add handler
+const getVoiceConnect = (interaction, client) => {
+    const connection = joinVoiceChannel({
+        channelId: interaction.member.voice.channel.id,
+        guildId: interaction.guild.id,
+        adapterCreator: interaction.guild.voiceAdapterCreator,
+    });
+
+    connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
+        try {
+            await Promise.race([
+                entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
+                entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
+            ]);
+            // Seems to be reconnecting to a new channel - ignore disconnect
+        } catch (error) {
+            // Seems to be a real disconnect which SHOULDN'T be recovered from
+            handleDisconnect(interaction, client);
+        }
+    });
+
+    // due to discord udp change
+    const networkStateChangeHandler = (oldNetworkState, newNetworkState) => {
+        const newUdp = Reflect.get(newNetworkState, 'udp');
+        clearInterval(newUdp?.keepAliveInterval);
+    };
+    // voice connection monitor
+    connection.on('stateChange', (oldState, newState) => {
+        log_server(`Connection transitioned from ${oldState.status} to ${newState.status}`);
+        Reflect.get(oldState, 'networking')?.off('stateChange', networkStateChangeHandler);
+        Reflect.get(newState, 'networking')?.on('stateChange', networkStateChangeHandler);
+    });      
+    log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
+    return connection;
+}
+
+// make audio player and add handler
+const getPlayer = (interaction, client) => {
+    const player = createAudioPlayer();
+    player.on('error', error => {
+        log_server(`ERROR: Player got an error`);
+        log_server(error);
+        client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
+        playNext(interaction, client);
+    });
+    player.on(AudioPlayerStatus.Idle, () => {
+        playNext(interaction, client);
+    });
+    player.on('stateChange', (oldState, newState) => {
+        log_server(`Player transitioned from ${oldState.status} to ${newState.status}`);
+    });
+    return player;
+}
+
+// return song lists
+const stringPlaylist = (playlist) => {
+    let listString = "";
+    for (let i = 0; i < playlist.songs.length; i++) {
+        const song = playlist.songs[i];
+        const tmpString = `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
+        if(listString.length + tmpString.length + 30 >= 1024) {
+            listString += " ...";
+            break;
+        }
+        listString += tmpString;
+    }
+    return listString;
+}
+
 // add single youtube or soundcloud url to playlist
 const addSong = async (interaction, client) => {
     if(!interaction || !client) {
@@ -33,7 +103,7 @@ const addSong = async (interaction, client) => {
         await interaction.reply({ content: '🚫 음악 기능을 사용하기 위해서는 음성 채널에 참가해야 합니다.' });
         return;
     }
-    // set deferRely
+
     await interaction.deferReply();
     let song = null;
     try {
@@ -70,34 +140,8 @@ const addSong = async (interaction, client) => {
     let serverQueue = queueMap.get(interaction.guild.id)
     try {
         if(!serverQueue) {
-            const connection = joinVoiceChannel({
-                channelId: interaction.member.voice.channel.id,
-                guildId: interaction.guild.id,
-                adapterCreator: interaction.guild.voiceAdapterCreator,
-            });
-            connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
-                try {
-                    await Promise.race([
-                        entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-                        entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-                    ]);
-                    // Seems to be reconnecting to a new channel - ignore disconnect
-                } catch (error) {
-                    // Seems to be a real disconnect which SHOULDN'T be recovered from
-                    handleDisconnect(interaction, client);
-                }
-            });
-            log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
-            const player = createAudioPlayer();
-            player.on('error', error => {
-                log_server(`ERROR: Player got an error`);
-                log_server(error);
-                client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
-                playNext(interaction, client);
-            });
-            player.on(AudioPlayerStatus.Idle, () => {
-                playNext(interaction, client);
-            });
+            const connection = getVoiceConnect(interaction, client);
+            const player = getPlayer(interaction, client);
             connection.subscribe(player);
             serverQueue = {
                 playlist: [],
@@ -151,7 +195,7 @@ const addLocalSong = async (interaction, client) => {
             type: 'local',
             title: songName,
             path: musicPath,
-            time: null
+            time: 0
         };
     } catch (error) {
         await interaction.editReply({ content: '🚫 잘못된 파일명 입니다.' });
@@ -162,33 +206,8 @@ const addLocalSong = async (interaction, client) => {
     let serverQueue = queueMap.get(interaction.guild.id)
     try {
         if(!serverQueue) {
-            const connection = joinVoiceChannel({
-                channelId: interaction.member.voice.channel.id,
-                guildId: interaction.guild.id,
-                adapterCreator: interaction.guild.voiceAdapterCreator,
-            });
-            connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
-                try {
-                    await Promise.race([
-                        entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-                        entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-                    ]);
-                    // Seems to be reconnecting to a new channel - ignore disconnect
-                } catch (error) {
-                    // Seems to be a real disconnect which SHOULDN'T be recovered from
-                    handleDisconnect(interaction, client);
-                }
-            });
-            log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
-            const player = createAudioPlayer();
-            player.on('error', error => {
-                log_server(`ERROR: Player got an error`);
-                client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
-                playNext(interaction, client);
-            });
-            player.on(AudioPlayerStatus.Idle, () => {
-                playNext(interaction, client);
-            });
+            const connection = getVoiceConnect(interaction, client);
+            const player = getPlayer(interaction, client);
             connection.subscribe(player);
             serverQueue = {
                 playlist: [],
@@ -216,6 +235,7 @@ const addLocalSong = async (interaction, client) => {
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
 }
 
+// add Youtube Playlist
 const addPlayList = async (interaction, client) => {
     if(!interaction || !client) {
         await interaction.reply({ content: '🚫 Discord 서버와의 통신에 오류가 발생했습니다.' });
@@ -258,34 +278,8 @@ const addPlayList = async (interaction, client) => {
     let serverQueue = queueMap.get(interaction.guild.id)
     try {
         if(!serverQueue) {
-            const connection = joinVoiceChannel({
-                channelId: interaction.member.voice.channel.id,
-                guildId: interaction.guild.id,
-                adapterCreator: interaction.guild.voiceAdapterCreator,
-            });
-            connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
-                try {
-                    await Promise.race([
-                        entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-                        entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-                    ]);
-                    // Seems to be reconnecting to a new channel - ignore disconnect
-                } catch (error) {
-                    // Seems to be a real disconnect which SHOULDN'T be recovered from
-                    handleDisconnect(interaction, client);
-                }
-            });
-            log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
-            const player = createAudioPlayer();
-            player.on('error', error => {
-                log_server(`ERROR: Player got an error`);
-                log_server(error);
-                client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
-                playNext(interaction, client);
-            });
-            player.on(AudioPlayerStatus.Idle, () => {
-                playNext(interaction, client);
-            });
+            const connection = getVoiceConnect(interaction, client);
+            const player = getPlayer(interaction, client);
             connection.subscribe(player);
             serverQueue = {
                 playlist: [],
@@ -297,23 +291,15 @@ const addPlayList = async (interaction, client) => {
             queueMap.set(interaction.guild.id, serverQueue);
             // send embeds
             embed.fields[0].name = `추가된 재생목록: ${playlist.title}`;
-            embed.fields[0].value = "";
+            embed.fields[0].value = stringPlaylist(playlist);
             embed.timestamp = new Date().toISOString();
-            for(let i = 0; i < playlist.songs.length; i++) {
-                const song = playlist.songs[i];
-                const tmpString = `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
-                if(embed.fields[0].value.length + tmpString.length + 100 >= 1024) {
-                    embed.fields[0].value += " ...";
-                    break;
-                }
-                embed.fields[0].value += tmpString;
-            }
             await interaction.editReply({embeds: [embed]});
             log_server(`[${interaction.guild.name}:${interaction.user.username}] added new playlist [${playlist.title}]`);
             play(interaction, client);
             return;
         }
     } catch (error) {
+        log_server(error);
         await interaction.editReply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
         return;
     }
@@ -324,12 +310,7 @@ const addPlayList = async (interaction, client) => {
     }
     serverQueue.playlist.push(...playlist.songs);
     embed.fields[0].name = `추가된 재생목록: ${playlist.title}`;
-    embed.fields[0].value = "";
-    embed.timestamp = new Date().toISOString();
-    for(let i = 0; i < playlist.songs.length; i++) {
-        const song = playlist.songs[i];
-        embed.fields[0].value += `${i+1}. ${song.title} \`${secToStamp(song.time)}\`\n`
-    }
+    embed.fields[0].value = stringPlaylist(playlist);
     await interaction.editReply({embeds: [embed]});
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new playlist [${playlist.title}]`);
 }
@@ -616,17 +597,8 @@ const showQueue = async (interaction, client) => {
 
     try {
         embed.fields[0].name = "현재 재생 중인 노래"
-        embed.fields[0].value = "▶ "
+        embed.fields[0].value = "▶ " + stringPlaylist({ songs: serverQueue.playlist });
         embed.timestamp = new Date().toISOString();
-        for(let i = 0; i < serverQueue.playlist.length; i++) {
-            const song = serverQueue.playlist[i];
-            const tmpString = `${i+1}. ${song.title}\n`;
-            if(embed.fields[0].value.length + tmpString.length + 100 >= 1024) {
-                    embed.fields[0].value += " ...";
-                    break;
-                }
-            embed.fields[0].value += tmpString;
-        }
         log_server(`[${interaction.guild.name}:${interaction.user.username}] used queue`);
         await interaction.reply({embeds: [embed]});
     } catch (error) {

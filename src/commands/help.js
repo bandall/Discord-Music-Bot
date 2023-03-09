@@ -31,6 +31,11 @@ const embed = {
             inline: false
         },
         {
+            name: 'seek',
+            value: 'Youtube 음원의 재생 시간을 조절합니다.',
+            inline: false
+        },
+        {
             name: 'pause',
             value: '노래 재생을 일시중지합니다.',
             inline: false
