@@ -3,3 +3,5 @@ node_modules
 src/config.json
 music
 log.txt
+build
+memo.txt

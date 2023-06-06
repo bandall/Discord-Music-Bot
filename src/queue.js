@@ -45,17 +45,18 @@ const getVoiceConnect = (interaction, client) => {
         }
     });
 
-    // due to discord udp change
-    const networkStateChangeHandler = (oldNetworkState, newNetworkState) => {
-        const newUdp = Reflect.get(newNetworkState, 'udp');
-        clearInterval(newUdp?.keepAliveInterval);
-    };
-    // voice connection monitor
-    connection.on('stateChange', (oldState, newState) => {
-        log_server(`Connection transitioned from ${oldState.status} to ${newState.status}`);
-        Reflect.get(oldState, 'networking')?.off('stateChange', networkStateChangeHandler);
-        Reflect.get(newState, 'networking')?.on('stateChange', networkStateChangeHandler);
-    });      
+    // discarded ==> discord/@voice fixed
+    // // due to discord udp change
+    // const networkStateChangeHandler = (oldNetworkState, newNetworkState) => {
+    //     const newUdp = Reflect.get(newNetworkState, 'udp');
+    //     clearInterval(newUdp?.keepAliveInterval);
+    // };
+    // // voice connection monitor
+    // connection.on('stateChange', (oldState, newState) => {
+    //     log_server(`Connection transitioned from ${oldState.status} to ${newState.status}`);
+    //     Reflect.get(oldState, 'networking')?.off('stateChange', networkStateChangeHandler);
+    //     Reflect.get(newState, 'networking')?.on('stateChange', networkStateChangeHandler);
+    // }); 
     log_server(`Connected to [${interaction.guild.name}:${interaction.user.username}]`);
     return connection;
 }
@@ -376,6 +377,7 @@ const playNext = async (interaction, client) => {
             serverQueue.player.stop();
             serverQueue.connection.destroy();
             queueMap.delete(interaction.guild.id);
+            log_server("server Queue size : " + queueMap.size);
         } else {
             play(interaction, client);
         }
@@ -649,6 +651,7 @@ const handleDisconnect = async (interaction, client) => {
         serverQueue.player.stop();
         serverQueue.connection.destroy();
         queueMap.delete(interaction.guild.id);
+        log_server("server Queue size : " + queueMap.size);
     } catch (error) {
         log_server(`[ERROR] => handleDisconnect can't disconnect voice channel`);
         log_server(error);

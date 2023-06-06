@@ -38,7 +38,8 @@ const log_server = async (d) => {
     ":"+date.getMinutes().toString().padStart(2, "0")+
     ":"+date.getSeconds().toString().padStart(2, "0")+"]";
     const logText = timeStamp + " => " + util.format(d);
-    console.log(logText);
+    if(process.env.environ == "dev")
+        console.log(logText);
 
     await mutex.acquire();
     {
