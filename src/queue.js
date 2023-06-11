@@ -73,9 +73,9 @@ const getPlayer = (interaction, client) => {
     player.on(AudioPlayerStatus.Idle, () => {
         playNext(interaction, client);
     });
-    player.on('stateChange', (oldState, newState) => {
-        log_server(`Player transitioned from ${oldState.status} to ${newState.status}`);
-    });
+    // player.on('stateChange', (oldState, newState) => {
+    //     log_server(`Player transitioned from ${oldState.status} to ${newState.status}`);
+    // });
     return player;
 }
 
@@ -166,6 +166,7 @@ const addSong = async (interaction, client) => {
         await interaction.editReply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
         return;
     }
+    
     serverQueue.playlist.push(song);
     await interaction.editReply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
     log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
@@ -199,7 +200,7 @@ const addLocalSong = async (interaction, client) => {
             time: 0
         };
     } catch (error) {
-        await interaction.editReply({ content: '🚫 잘못된 파일명 입니다.' });
+        await interaction.editReply({ content: '🚫 잘못된 파일ID 입니다.' });
         return;
     }
     
@@ -227,6 +228,7 @@ const addLocalSong = async (interaction, client) => {
         await interaction.editReply({ content: `💿 노래를 재생 목록에 추가할 수 없습니다.` });
         return;
     }
+
     if(interaction.member.voice.channel.id != serverQueue.connection.joinConfig.channelId) {
         await interaction.editReply({ content: '🚫 자갈치상인이 이미 사용중입니다.' });
         return;

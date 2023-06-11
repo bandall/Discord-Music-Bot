@@ -17,7 +17,7 @@ const embed = {
         },
         {
             name: 'local',
-            value: '서버에 저장된 노래를 재생합니다.\n업로드 링크: [https://bandallgom.com:42667/sharing/LGJ8dlIj7]\n업로드 시 "귀하의 이름"은 music으로 작성\n/local [업로드한 파일 이름]',
+            value: '서버에 저장된 노래를 재생합니다.\n업로드 링크: [https://bandallgom.com:8000/]\nID:music PW:Music!@2018\n업로드 후 파일 ID를 통해 재생합니다.',
             inline: false
         },
         {
