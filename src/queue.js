@@ -3,6 +3,7 @@ import play_dl from "play-dl";
 import fs, { createReadStream } from "fs";
 import path from "path"
 import "dotenv/config"
+import { getFileInfo } from "./api-controller";
 import { log_server, secToStamp, sleep } from "./util";
 const queueMap = new Map();
 
@@ -187,15 +188,16 @@ const addLocalSong = async (interaction, client) => {
 
     let song = null;
     try {
-        const songName = interaction.options.getString('file');
-        const musicPath = path.join(process.env.localPath, songName);
+        const songId = interaction.options.getString('file');
+        const musicPath = path.join(process.env.localPath, songId);
         const exist = fs.existsSync(musicPath);
         if(!exist) {
-            throw new Error(`No Such File ${songName}`);
+            throw new Error(`No Such File ${songId}`);
         }
         song = {
             type: 'local',
-            title: songName,
+            title: await getFileInfo(songId),
+            songId: songId,
             path: musicPath,
             time: 0
         };
@@ -220,7 +222,7 @@ const addLocalSong = async (interaction, client) => {
             serverQueue.playlist.push(song);
             queueMap.set(interaction.guild.id, serverQueue);
             await interaction.editReply("🎶 노래 재생이 시작됩니다.");
-            log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
+            log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}:${song.songId}]`);
             play(interaction, client);
             return;
         }
@@ -235,7 +237,7 @@ const addLocalSong = async (interaction, client) => {
     }
     serverQueue.playlist.push(song);
     await interaction.editReply({ content: `💿 재생목록에 추가됨  ➡  [${song.title}]` });
-    log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}]`);
+    log_server(`[${interaction.guild.name}:${interaction.user.username}] added new song [${song.title}:${song.songId}]`);
 }
 
 // add Youtube Playlist
