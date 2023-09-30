@@ -51,7 +51,7 @@
 
 ## ❗ ISSUE ❗
 
-### play-dl 라이브러리 오류
+### ~~play-dl 라이브러리 오류~~ (버전 1.9.7에서 해결됨)
 
 TypeError: Cannot read properties of undefined (reading 'find')
 
