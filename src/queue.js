@@ -68,7 +68,10 @@ const getPlayer = (interaction, client) => {
     player.on('error', error => {
         log_server(`ERROR: Player got an error`);
         log_server(error);
-        client.channels.cache.get(serverQueue.textChannel).send("‼음악을 재생 중 오류가 발생했습니다.");
+        let serverQueue = queueMap.get(interaction.guild.id);
+        if(serverQueue) {
+            client.channels.cache.get(serverQueue.textChannel).send("🚫 음악을 재생 중 오류가 발생했습니다.");
+        }
         playNext(interaction, client);
     });
     player.on(AudioPlayerStatus.Idle, () => {
