@@ -1,0 +1,12 @@
+const dl = require('play-dl');
+
+const getSourceStream = async (track) => {
+    var readableStream = await dl.stream(track, {
+        quality: 0,
+        discordPlayerCompatibility: true
+      });
+
+      return readableStream;
+};
+
+getSourceStream("https://youtu.be/dQw4w9WgXcQ");
